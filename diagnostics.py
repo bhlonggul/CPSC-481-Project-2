@@ -90,15 +90,10 @@ class Diagnostics:
     """ Use Gemini and a Bayesian network to diagnose between three lung diseases """
 
     def __init__(self):
+        # The API key comes from the environment, never from this file. Without a key the
+        # object can still be created; diagnose() then explains how to set one.
         api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "GEMINI_API_KEY is not set. Create a key at https://aistudio.google.com/apikey "
-                "and set it before running, for example\n"
-                '  PowerShell: $env:GEMINI_API_KEY = "your-key"\n'
-                '  bash:       export GEMINI_API_KEY="your-key"'
-            )
-        self.client = genai.Client(api_key=api_key)
+        self.client = genai.Client(api_key=api_key) if api_key else None
         self.model = os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
         # Ask for JSON matching Diagnosis. Thinking stays on at "high", Google's setting for
         # math; temperature is left unset because Google deprecates it for Gemini 3.8 Flash
@@ -109,6 +104,8 @@ class Diagnostics:
             thinking_config=types.ThinkingConfig(thinking_level="high"),
         )
         print(f"Diagnostics ready, using Gemini model {self.model}")
+        if not api_key:
+            print("Warning: GEMINI_API_KEY is not set, so diagnose() can't call Gemini yet")
 
     def diagnose(self, visit_to_asia, smoking, xray_result, dyspnea):
         print(f"Inputs: visit_to_asia={visit_to_asia}, smoking={smoking}, "
@@ -129,6 +126,12 @@ class Diagnostics:
         print(f"Prompt sent to {self.model}:\n{prompt}")
 
         # 3. Ask Gemini, retrying when the reply can't be parsed or validated
+        if self.client is None:
+            raise RuntimeError(
+                "GEMINI_API_KEY is not set. Create a key at https://aistudio.google.com/apikey "
+                "and set it before running, for example\n"
+                '  PowerShell: $env:GEMINI_API_KEY = "your-key"\n'
+                '  bash:       export GEMINI_API_KEY="your-key"')
         for attempt in range(1, MAX_ATTEMPTS + 1):
             response = self.client.models.generate_content(
                 model=self.model, contents=prompt, config=self.config)

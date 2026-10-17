@@ -140,10 +140,14 @@ class DiagnosticsTestCase(unittest.TestCase):
 
 
 class ConstructorTests(DiagnosticsTestCase):
-    def test_missing_api_key_raises_error_naming_the_variable(self):
+    def test_missing_api_key_fails_at_diagnose_with_an_error_naming_the_variable(self):
+        # Constructing must still work without a key (the autograder and the GUI create the
+        # object first); the clear error comes when diagnose() needs to call Gemini.
         del os.environ["GEMINI_API_KEY"]
-        with self.assertRaisesRegex(RuntimeError, "GEMINI_API_KEY"):
-            self.new_diagnostics()
+        dx = self.new_diagnostics()
+        with redirect_stdout(io.StringIO()), self.assertRaisesRegex(RuntimeError, "GEMINI_API_KEY"):
+            dx.diagnose(*SPEC_CASE)
+        self.assertEqual(self.gemini.requests, [])
 
     def test_api_key_comes_from_the_environment(self):
         self.run_case(GOOD_REPLY)
