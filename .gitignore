@@ -1,0 +1,7 @@
+# Secrets: the Gemini API key lives here, never in the code
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
