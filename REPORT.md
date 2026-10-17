@@ -2,7 +2,7 @@
 
 ## (a) Why this LLM
 
-We used Gemini 3.8 Flash through Google's `google-genai` SDK. It is Google's current stable Flash model and supports both structured JSON output and an adjustable "thinking" level for multi-step arithmetic. The spec's suggested Gemini 2.5 Flash is now limited to accounts that have used it before.
+We chose Gemini 3.8 Flash (through Google's `google-genai` SDK) because it is Google's current stable Flash model and supports both structured JSON output and an adjustable "thinking" level for multi-step arithmetic. The assignment's suggested Gemini 2.5 Flash is now limited to accounts that have used it before.
 
 ## (b) Major challenge
 
