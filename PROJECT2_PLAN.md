@@ -108,7 +108,7 @@ Known check: `diagnose("No", "Yes", "Abnormal", "Absent")` returns `["Cancer", ~
 - [x] Confirm SDK call shape for structured output with the installed `google-genai` version
 - [x] Implement `Diagnostics` with validation, prompt, structured output, retries, prints
 - [x] Offline unit tests pass
-- [ ] Live spec case returns Cancer ~0.4367
+- [x] Live spec case returns Cancer ~0.4367
 - [ ] Eval script passes on the sample, then on as many rows as rate limits allow
 - [ ] Run the GUI and take the screenshot
 - [ ] Draft the report answers
