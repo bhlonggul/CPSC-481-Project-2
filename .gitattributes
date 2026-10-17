@@ -1,0 +1,4 @@
+# Never convert line endings in binary files (git can mistake a PDF for text)
+*.pdf binary
+*.png binary
+*.jpg binary
