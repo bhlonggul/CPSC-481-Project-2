@@ -109,7 +109,7 @@ Known check: `diagnose("No", "Yes", "Abnormal", "Absent")` returns `["Cancer", ~
 - [x] Implement `Diagnostics` with validation, prompt, structured output, retries, prints
 - [x] Offline unit tests pass
 - [x] Live spec case returns Cancer ~0.4367
-- [ ] Eval script passes on the sample, then on as many rows as rate limits allow
+- [x] Eval script passes on the sample, then on as many rows as rate limits allow
 - [ ] Run the GUI and take the screenshot
 - [ ] Draft the report answers
 - [ ] Final check: no key in any file, names match the spec exactly
