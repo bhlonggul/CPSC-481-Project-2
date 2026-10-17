@@ -14,16 +14,12 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 
-# Structured output call shape, confirmed offline against google-genai 2.31.0:
-#   client.models.generate_content(model=..., contents=..., config=types.GenerateContentConfig(
-#       response_mime_type="application/json", response_schema=<Pydantic model>))
-# The SDK turns the Pydantic model into the response schema (disease becomes an enum),
-# so the reply text is JSON matching Diagnosis. The newer client.interactions.create(...,
-# response_format=...) also exists, but generate_content takes the Pydantic model
-# directly and does not store requests on Google's side.
+# Structured output, checked against google-genai 2.31.0: generate_content with
+# response_mime_type="application/json" and response_schema=<Pydantic model> makes
+# Gemini reply with JSON that matches Diagnosis.
 
 DEFAULT_MODEL = "gemini-3.8-flash"  # override with the GEMINI_MODEL environment variable
-MAX_RETRIES = 2  # extra attempts after a reply that can't be parsed or validated
+MAX_ATTEMPTS = 3  # the first try plus up to 2 retries when a reply is unusable
 
 
 class Diagnosis(BaseModel):
@@ -32,16 +28,8 @@ class Diagnosis(BaseModel):
     probability: float
 
 
-# The four inputs: (argument name, network variable, {allowed string: value}).
-# "NA" means the variable was not observed, so it is left out of the evidence.
-INPUTS = (
-    ("visit_to_asia", "Asia", {"Yes": True, "No": False}),
-    ("smoking", "Smoking", {"Yes": True, "No": False}),
-    ("xray_result", "Xray", {"Abnormal": True, "Normal": False}),
-    ("dyspnea", "Dyspnea", {"Present": True, "Absent": False}),
-)
-
-VARIABLES = ("Asia", "Smoking", "TB", "Cancer", "Bronchitis", "TBorC", "Xray", "Dyspnea")
+# Every variable in the network, used to list the unobserved ones in the prompt
+VARIABLES =("Asia", "Smoking", "TB", "Cancer", "Bronchitis", "TBorC", "Xray", "Dyspnea")
 
 # Static part of the prompt: the network structure and CPTs, copied from Project 1.
 # Plain ASCII only, so printing it never fails on a Windows console.
@@ -126,8 +114,14 @@ class Diagnostics:
         print(f"Inputs: visit_to_asia={visit_to_asia}, smoking={smoking}, "
               f"xray_result={xray_result}, dyspnea={dyspnea}")
 
-        # 1. Turn the inputs into evidence, leaving out the unobserved (NA) ones
-        evidence = self._evidence(visit_to_asia, smoking, xray_result, dyspnea)
+        # 1. Turn the inputs into evidence. "NA" means not observed, so it is left out.
+        values = {
+            "Asia": self._convert("visit_to_asia", visit_to_asia, "Yes", "No"),
+            "Smoking": self._convert("smoking", smoking, "Yes", "No"),
+            "Xray": self._convert("xray_result", xray_result, "Abnormal", "Normal"),
+            "Dyspnea": self._convert("dyspnea", dyspnea, "Present", "Absent"),
+        }
+        evidence = {variable: value for variable, value in values.items() if value is not None}
         print(f"Evidence: {evidence}")
 
         # 2. Build the prompt: the network, the evidence, and what to compute
@@ -135,35 +129,31 @@ class Diagnostics:
         print(f"Prompt sent to {self.model}:\n{prompt}")
 
         # 3. Ask Gemini, retrying when the reply can't be parsed or validated
-        problem = None
-        for attempt in range(1, MAX_RETRIES + 2):
+        for attempt in range(1, MAX_ATTEMPTS + 1):
             response = self.client.models.generate_content(
                 model=self.model, contents=prompt, config=self.config)
             print(f"Raw response (attempt {attempt}): {response.text}")
             try:
                 disease, probability = self._parse(response.text)
             except ValueError as error:  # includes pydantic's ValidationError
-                problem = error
                 print(f"Unusable response: {error}")
                 continue
             print(f"Parsed result: disease={disease}, probability={probability}")
             return [disease, probability]
 
         raise RuntimeError(
-            f"Gemini gave no usable diagnosis in {MAX_RETRIES + 1} attempts. Last problem: {problem}")
+            f"Gemini gave no usable diagnosis in {MAX_ATTEMPTS} attempts (see the responses above)")
 
     @staticmethod
-    def _evidence(*values):
-        """Map the input strings to {variable: True/False}; raise ValueError on anything unexpected."""
-        evidence = {}
-        for (argument, variable, allowed), value in zip(INPUTS, values):
-            if value == "NA":
-                continue
-            if value not in allowed:
-                choices = ", ".join(f"'{text}'" for text in allowed)
-                raise ValueError(f"{argument} must be {choices}, or 'NA'")
-            evidence[variable] = allowed[value]
-        return evidence
+    def _convert(name, value, true_value, false_value):
+        """Map one input string to True/False, or None for "NA" (not observed)."""
+        if value == "NA":
+            return None
+        if value == true_value:
+            return True
+        if value == false_value:
+            return False
+        raise ValueError(f"{name} must be '{true_value}', '{false_value}', or 'NA'")
 
     @staticmethod
     def _prompt(evidence):
