@@ -112,7 +112,7 @@ Known check: `diagnose("No", "Yes", "Abnormal", "Absent")` returns `["Cancer", ~
 - [x] Eval script passes on the sample, then on as many rows as rate limits allow
 - [x] Run the GUI and take the screenshot
 - [x] Draft the report answers
-- [ ] Final check: no key in any file, names match the spec exactly
+- [x] Final check: no key in any file, names match the spec exactly
 
 ## Open questions for the user
 
