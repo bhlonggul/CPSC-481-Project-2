@@ -105,7 +105,7 @@ Known check: `diagnose("No", "Yes", "Abnormal", "Absent")` returns `["Cancer", ~
 ## Milestones
 
 - [x] Set up project folder, copy GUI, skeleton, and `expected_answers.csv`; add `.gitignore` (include `.env`)
-- [ ] Confirm SDK call shape for structured output with the installed `google-genai` version
+- [x] Confirm SDK call shape for structured output with the installed `google-genai` version
 - [ ] Implement `Diagnostics` with validation, prompt, structured output, retries, prints
 - [ ] Offline unit tests pass
 - [ ] Live spec case returns Cancer ~0.4367
